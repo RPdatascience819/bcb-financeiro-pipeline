@@ -77,7 +77,17 @@ def fetch_series(
     except requests.RequestException as exc:
         raise IngestionError(f"Falha ao consultar a API do BCB: {exc}") from exc
 
-    payload = response.json()
+    # O SGS sinaliza limitacao de taxa por IP com HTTP 200 + a pagina HTML
+    # "Requisicao invalida!", em vez de um 429. Como o status e 200, o
+    # raise_for_status() acima nao pega: sobra detectar aqui.
+    try:
+        payload = response.json()
+    except ValueError as exc:
+        raise IngestionError(
+            "A API do BCB respondeu 200 mas com corpo nao-JSON "
+            f"(Content-Type: {response.headers.get('Content-Type')}). "
+            "Normalmente isso e limitacao de taxa por IP; tente de novo em ~1 minuto."
+        ) from exc
     if not isinstance(payload, list) or not payload:
         raise IngestionError(f"Resposta vazia ou em formato inesperado para a serie {codigo}")
 

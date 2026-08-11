@@ -14,6 +14,7 @@ from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
+import requests
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from ingestion.fetch_data import IngestionError, build_url, fetch_series  # noqa: E402
@@ -56,6 +57,25 @@ def test_fetch_series_payload_vazio_gera_erro(mock_get):
     mock_response = MagicMock()
     mock_response.json.return_value = []
     mock_response.raise_for_status.return_value = None
+    mock_get.return_value = mock_response
+
+    with pytest.raises(IngestionError):
+        fetch_series(codigo=1, ultimos=3)
+
+
+@patch("ingestion.fetch_data.requests.get")
+def test_fetch_series_resposta_nao_json_gera_erro(mock_get):
+    """A API do BCB sinaliza throttling com HTTP 200 + pagina HTML de erro.
+
+    O raise_for_status() nao pega (o status e 200) e o .json() estoura. Isso
+    precisa virar IngestionError, e nao vazar um JSONDecodeError cru cuja
+    mensagem aponta para o parsing e esconde a causa real.
+    """
+    mock_response = MagicMock()
+    mock_response.raise_for_status.return_value = None
+    mock_response.json.side_effect = requests.exceptions.JSONDecodeError(
+        "Expecting value", "<html><title>Requisicao invalida!</title></html>", 0
+    )
     mock_get.return_value = mock_response
 
     with pytest.raises(IngestionError):
