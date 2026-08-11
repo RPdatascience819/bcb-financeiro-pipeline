@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Ambiente virtual
+.venv/
+venv/
+
+# Segredos
+.env
+
+# Postgres / Docker
+pgdata/
+
+# Streamlit
+.streamlit/
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+
+# SO
+.DS_Store
+Thumbs.db
