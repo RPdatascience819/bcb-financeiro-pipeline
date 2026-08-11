@@ -51,7 +51,7 @@ o `PATH` que ele define não sobrevive ao fim do script.
 ### 1.3 Ingestão
 
 ```powershell
-python -m ingestion.fetch_data --ultimos 500
+python -m ingestion.fetch_data --inicio 01/01/2024 --fim 31/12/2025
 ```
 
 O que acontece:
@@ -63,17 +63,29 @@ O que acontece:
 
 Alternativas de execução:
 ```powershell
-# intervalo de datas específico (formato dd/MM/aaaa)
-python -m ingestion.fetch_data --serie 1 --inicio 01/01/2024 --fim 31/12/2024
+# atalho: ingestão + transformação, janela em anos (padrão 2)
+.\run_pipeline.ps1 -Anos 5
 
 # outra série SGS (ex.: 11 = Selic)
-python -m ingestion.fetch_data --serie 11 --ultimos 200
+python -m ingestion.fetch_data --serie 11 --inicio 01/01/2024 --fim 31/12/2025
+
+# espiada rápida: o modo --ultimos existe, mas o teto da API é 20
+python -m ingestion.fetch_data --ultimos 20
 ```
 
-> A API do BCB passou a exigir filtro de data ou uso do endpoint
-> `/ultimos/{N}` a partir de março de 2025, e limita consultas por
-> intervalo a no máximo 10 anos. O script já usa `/ultimos/{N}` como
-> padrão para evitar esse problema.
+> **Limites da API, medidos em 11/08/2026:**
+> - `/ultimos/{N}` aceita **no máximo N=20**. Acima disso: HTTP 400 com
+>   `"A quantidade máxima de valores deve ser 20"`. Verificado por bisseção —
+>   `ultimos/11` passa, `ultimos/25` já é recusado.
+> - Consulta por intervalo aceita até **10 anos** em séries de periodicidade
+>   diária. Acima disso: HTTP 406 explicando a janela.
+> - **Rate limiting por IP vem como HTTP 200 + `text/html`** (a página
+>   "Requisição inválida!"), e **não** como 429. Isso faz o `raise_for_status()`
+>   passar direto — por isso `fetch_series()` também valida que o corpo é JSON
+>   antes de confiar na resposta. Recupera sozinho em menos de 1 minuto.
+>
+> Consequência prática: o pipeline usa **intervalo de datas**, não `/ultimos`.
+> Com teto de 20 pontos, a média móvel de 30 dias não teria o que calcular.
 
 ### 1.4 Transformação
 
@@ -174,7 +186,7 @@ integração real contra o Postgres do `docker-compose.yml`:
 
 ```powershell
 docker compose up -d
-python -m ingestion.fetch_data --ultimos 30
+python -m ingestion.fetch_data --inicio 01/01/2025 --fim 31/12/2025
 python -m transform.run_transform
 python -c "from db.connection import get_engine; import pandas as pd; print(pd.read_sql('SELECT count(*) FROM analytics.serie_bcb_metrics', get_engine()))"
 ```

@@ -50,6 +50,7 @@ analytics.serie_bcb_metrics  (Postgres, métricas prontas para consumo)
 │   └── 02_create_analytics_table.sql
 ├── db/connection.py              # engine SQLAlchemy compartilhada
 ├── dashboard/app.py              # app Streamlit
+├── run_pipeline.ps1              # atalho: ingestão + transformação
 ├── tests/                        # testes unitários (pytest)
 ├── .github/workflows/ci.yml      # lint + testes no push/PR
 ├── docker-compose.yml            # Postgres local
@@ -73,13 +74,31 @@ python -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -r requirements.lock
 
-# 3) rodar o pipeline
-python -m ingestion.fetch_data --ultimos 500
-python -m transform.run_transform
+# 3) rodar o pipeline (ingestão + transformação, últimos 2 anos)
+.\run_pipeline.ps1
 
 # 4) subir o dashboard
 streamlit run dashboard/app.py
 ```
+
+> **Porta 5432 ocupada?** Se você já tiver um PostgreSQL instalado nativamente,
+> o `docker compose up -d` falha com erro de bind. Defina `POSTGRES_PORT=5433`
+> no `.env` antes de subir — o Compose é parametrizado e nenhum YAML precisa
+> ser editado.
+
+O `run_pipeline.ps1` aceita `-Anos` para mudar a janela (padrão: 2). Para rodar
+cada camada separadamente, ou usar outra série SGS:
+
+```powershell
+python -m ingestion.fetch_data --serie 1 --inicio 01/01/2024 --fim 31/12/2025
+python -m transform.run_transform
+```
+
+> **Por que intervalo de datas e não `--ultimos N`?** O endpoint `/ultimos/{N}`
+> da API do BCB aceita no máximo **20 valores** — acima disso devolve HTTP 400
+> ("A quantidade máxima de valores deve ser 20"). E 20 pontos não preenchem a
+> janela de 30 dias das métricas. O endpoint por intervalo aceita até 10 anos
+> em séries diárias.
 
 Passo a passo detalhado, explicação de cada camada e exemplos de extensão
 (dbt, Airflow, outras fontes de dados) em `docs/IMPLEMENTATION_GUIDE.md`.
