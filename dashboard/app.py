@@ -22,7 +22,7 @@ from sqlalchemy import text
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from db.connection import get_engine  # noqa: E402
 
-st.set_page_config(page_title="Pipeline Portfolio - Series BCB", layout="wide")
+st.set_page_config(page_title="Indicadores Econômicos — BCB", layout="wide")
 
 
 @st.cache_data(ttl=300)
@@ -46,22 +46,22 @@ def load_data(codigo_serie: int) -> pd.DataFrame:
 def render_kpis(df: pd.DataFrame) -> None:
     ultimo = df.iloc[-1]
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Ultimo valor", f'{ultimo["valor"]:.4f}')
+    col1.metric("Último valor", f'{ultimo["valor"]:.4f}')
     col2.metric(
-        "Variacao vs. dia anterior",
+        "Variação vs. dia anterior",
         f'{ultimo["variacao_percentual"]:.2f}%' if pd.notna(ultimo["variacao_percentual"]) else "-",
     )
-    col3.metric("Media movel 7d", f'{ultimo["media_movel_7d"]:.4f}')
+    col3.metric("Média móvel 7d", f'{ultimo["media_movel_7d"]:.4f}')
     col4.metric("Volatilidade 30d", f'{ultimo["volatilidade_30d"]:.4f}' if pd.notna(ultimo["volatilidade_30d"]) else "-")
 
 
 def render_chart(df: pd.DataFrame) -> None:
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=df["data"], y=df["valor"], name="Valor", mode="lines"))
-    fig.add_trace(go.Scatter(x=df["data"], y=df["media_movel_7d"], name="Media movel 7d", mode="lines"))
-    fig.add_trace(go.Scatter(x=df["data"], y=df["media_movel_30d"], name="Media movel 30d", mode="lines"))
+    fig.add_trace(go.Scatter(x=df["data"], y=df["media_movel_7d"], name="Média móvel 7d", mode="lines"))
+    fig.add_trace(go.Scatter(x=df["data"], y=df["media_movel_30d"], name="Média móvel 30d", mode="lines"))
     fig.update_layout(
-        title="Serie historica com medias moveis",
+        title="Série histórica com médias móveis",
         xaxis_title="Data",
         yaxis_title="Valor",
         legend_title="",
@@ -71,31 +71,31 @@ def render_chart(df: pd.DataFrame) -> None:
 
 
 def main() -> None:
-    st.title("Pipeline de dados: API -> PostgreSQL -> Dashboard")
+    st.title("Indicadores Econômicos — Banco Central do Brasil")
     st.caption(
-        "Fonte: API SGS do Banco Central do Brasil. "
-        "Ingestao em Python, transformacao em SQL, visualizacao em Streamlit."
+        "Valores diários das séries do SGS/Banco Central, com médias móveis "
+        "de 7 e 30 dias, volatilidade e variação diária."
     )
 
-    codigo_serie = st.sidebar.number_input("Codigo da serie SGS", min_value=1, value=1, step=1)
+    codigo_serie = st.sidebar.number_input("Código da série SGS", min_value=1, value=1, step=1)
 
     try:
         df = load_data(int(codigo_serie))
     except Exception as exc:  # noqa: BLE001 - exibicao amigavel de erro no dashboard
         st.error(
-            "Nao foi possivel conectar ao banco ou a serie ainda nao foi carregada. "
-            "Rode a ingestao e a transformacao antes de abrir o dashboard."
+            "Não foi possível conectar ao banco. Verifique se o container está no ar "
+            "(`docker compose ps`) e se o `.env` aponta para a porta certa."
         )
         st.exception(exc)
         return
 
     if df.empty:
-        st.warning("Nenhum dado encontrado para essa serie. Rode a ingestao primeiro.")
+        st.warning("Nenhum dado encontrado para essa série. Rode a ingestão primeiro.")
         return
 
     min_data, max_data = df["data"].min().date(), df["data"].max().date()
     data_inicio, data_fim = st.sidebar.slider(
-        "Periodo",
+        "Período",
         min_value=min_data,
         max_value=max_data,
         value=(min_data, max_data),
@@ -104,7 +104,7 @@ def main() -> None:
     df_filtrado = df[(df["data"].dt.date >= data_inicio) & (df["data"].dt.date <= data_fim)]
 
     if df_filtrado.empty:
-        st.warning("Nenhum dado no periodo selecionado.")
+        st.warning("Nenhum dado no período selecionado.")
         return
 
     render_kpis(df_filtrado)
