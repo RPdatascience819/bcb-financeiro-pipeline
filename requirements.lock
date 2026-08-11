@@ -1,0 +1,68 @@
+# requirements.lock -- ambiente resolvido, gerado com "pip freeze".
+#
+# Divisao de papeis:
+#   requirements.txt  = INTENCAO. As 9 dependencias que o projeto pede
+#                       diretamente. E o arquivo que voce edita.
+#   requirements.lock = RESOLUCAO. As 51 versoes exatas que o pip escolheu,
+#                       incluindo as transitivas. Gerado, nunca editado a mao.
+#
+# O CI instala a partir deste arquivo, para que a build valide exatamente o
+# mesmo conjunto de pacotes que roda na maquina de desenvolvimento.
+#
+# Para regenerar depois de mexer no requirements.txt:
+#   .venv\Scripts\python.exe -m pip install -r requirements.txt
+#   .venv\Scripts\python.exe -m pip freeze > requirements.lock
+#
+# Resolvido em: 2026-08-11, Python 3.11.15, Windows.
+
+altair==5.5.0
+attrs==26.1.0
+blinker==1.9.0
+cachetools==5.5.2
+certifi==2026.7.22
+charset-normalizer==3.4.9
+click==8.4.2
+colorama==0.4.6
+gitdb==4.0.12
+GitPython==3.1.59
+greenlet==3.5.5
+idna==3.18
+iniconfig==2.3.0
+Jinja2==3.1.6
+jsonschema==4.26.0
+jsonschema-specifications==2025.9.1
+markdown-it-py==4.2.0
+MarkupSafe==3.0.3
+mdurl==0.1.2
+narwhals==2.24.0
+numpy==2.4.6
+packaging==24.2
+pandas==2.2.2
+pillow==10.4.0
+plotly==5.22.0
+pluggy==1.6.0
+protobuf==5.29.6
+psycopg2-binary==2.9.9
+pyarrow==25.0.1
+pydeck==0.9.3
+Pygments==2.20.0
+pytest==8.2.2
+python-dateutil==2.9.0.post0
+python-dotenv==1.0.1
+pytz==2026.3.post1
+referencing==0.37.0
+requests==2.32.3
+rich==13.9.4
+rpds-py==2026.6.3
+ruff==0.5.0
+six==1.17.0
+smmap==5.0.3
+SQLAlchemy==2.0.30
+streamlit==1.36.0
+tenacity==8.5.0
+toml==0.10.2
+tornado==6.5.8
+typing_extensions==4.16.0
+tzdata==2026.3
+urllib3==2.7.0
+watchdog==4.0.2

@@ -12,14 +12,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Mesma versao usada em desenvolvimento: um CI que roda em outra versao
+      # valida um ambiente que ninguem executa de fato.
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.11"
           cache: "pip"
 
+      # Instala a partir do lock, nao do requirements.txt: assim a build testa
+      # exatamente as mesmas 51 versoes da maquina de desenvolvimento, em vez de
+      # resolver dependencias transitivas de novo a cada execucao.
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r requirements.lock
 
       - name: Lint (ruff)
         run: ruff check .

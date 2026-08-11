@@ -1,66 +1,67 @@
 # bcb-financeiro-pipeline
 
 [![CI](https://github.com/RPdatascience819/bcb-financeiro-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/RPdatascience819/bcb-financeiro-pipeline/actions/workflows/ci.yml)
-[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/)
+[![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-### Pipeline de Dados: API pÃºblica â†’ PostgreSQL â†’ Dashboard
+### Pipeline de Dados: API pública → PostgreSQL → Dashboard
 
-Pipeline de engenharia de dados ponta a ponta, construÃ­do como peÃ§a de portfÃ³lio
-para freelancing. Em vez de mais um notebook de exploraÃ§Ã£o, o objetivo aqui Ã©
-demonstrar entrega: ingestÃ£o, transformaÃ§Ã£o, teste, execuÃ§Ã£o reprodutÃ­vel e
-documentaÃ§Ã£o â€” o conjunto de competÃªncias que um cliente pequeno/mÃ©dio
+Pipeline de engenharia de dados ponta a ponta, construído como peça de portfólio
+para freelancing. Em vez de mais um notebook de exploração, o objetivo aqui é
+demonstrar entrega: ingestão, transformação, teste, execução reprodutível e
+documentação — o conjunto de competências que um cliente pequeno/médio
 realmente avalia ao contratar.
 
 ## Arquitetura
 
 ```
-API pÃºblica (BCB / SGS)
-        â”‚  Python (requests + pandas)
-        â–¼
+API pública (BCB / SGS)
+        │  Python (requests + pandas)
+        ▼
    raw.serie_bcb            (Postgres, dados brutos)
-        â”‚  SQL (window functions)
-        â–¼
-analytics.serie_bcb_metrics  (Postgres, mÃ©tricas prontas para consumo)
-        â”‚  Streamlit + Plotly
-        â–¼
+        │  SQL (window functions)
+        ▼
+analytics.serie_bcb_metrics  (Postgres, métricas prontas para consumo)
+        │  Streamlit + Plotly
+        ▼
     Dashboard interativo
 ```
 
-- **Fonte de dados**: [API SGS do Banco Central do Brasil](https://dadosabertos.bcb.gov.br/) â€”
-  pÃºblica, sem autenticaÃ§Ã£o, retorna sÃ©ries temporais em JSON. Por padrÃ£o o
-  projeto usa a sÃ©rie 1 (dÃ³lar comercial, venda, diÃ¡rio), mas qualquer cÃ³digo
-  de sÃ©rie SGS funciona (ex.: 11 = Selic, 433 = IPCA).
+- **Fonte de dados**: [API SGS do Banco Central do Brasil](https://dadosabertos.bcb.gov.br/) —
+  pública, sem autenticação, retorna séries temporais em JSON. Por padrão o
+  projeto usa a série 1 (dólar comercial, venda, diário), mas qualquer código
+  de série SGS funciona (ex.: 11 = Selic, 433 = IPCA).
 - **Banco**: PostgreSQL 16, via Docker Compose.
-- **TransformaÃ§Ã£o**: SQL puro com window functions (mÃ©dia mÃ³vel de 7 e 30
-  dias, volatilidade, variaÃ§Ã£o diÃ¡ria). Fica fÃ¡cil de migrar para dbt depois
+- **Transformação**: SQL puro com window functions (média móvel de 7 e 30
+  dias, volatilidade, variação diária). Fica fácil de migrar para dbt depois
   (ver `docs/IMPLEMENTATION_GUIDE.md`).
-- **ApresentaÃ§Ã£o**: Streamlit + Plotly, com KPIs, grÃ¡fico e tabela filtrÃ¡vel.
+- **Apresentação**: Streamlit + Plotly, com KPIs, gráfico e tabela filtrável.
 - **Qualidade**: testes automatizados com pytest (mockando a API, sem
-  dependÃªncia de rede) e um workflow de CI no GitHub Actions.
+  dependência de rede) e um workflow de CI no GitHub Actions.
 
 ## Estrutura do projeto
 
 ```
 .
-â”œâ”€â”€ ingestion/fetch_data.py       # extrai da API e carrega em raw.*
-â”œâ”€â”€ transform/run_transform.py    # aplica os scripts sql/*.sql
-â”œâ”€â”€ sql/
-â”‚   â”œâ”€â”€ 01_create_raw_table.sql
-â”‚   â””â”€â”€ 02_create_analytics_table.sql
-â”œâ”€â”€ db/connection.py              # engine SQLAlchemy compartilhada
-â”œâ”€â”€ dashboard/app.py              # app Streamlit
-â”œâ”€â”€ tests/                        # testes unitÃ¡rios (pytest)
-â”œâ”€â”€ .github/workflows/ci.yml      # lint + testes no push/PR
-â”œâ”€â”€ docker-compose.yml            # Postgres local
-â”œâ”€â”€ requirements.txt
-â”œâ”€â”€ .env.example
-â””â”€â”€ docs/IMPLEMENTATION_GUIDE.md  # passo a passo e como estender
+├── ingestion/fetch_data.py       # extrai da API e carrega em raw.*
+├── transform/run_transform.py    # aplica os scripts sql/*.sql
+├── sql/
+│   ├── 01_create_raw_table.sql
+│   └── 02_create_analytics_table.sql
+├── db/connection.py              # engine SQLAlchemy compartilhada
+├── dashboard/app.py              # app Streamlit
+├── tests/                        # testes unitários (pytest)
+├── .github/workflows/ci.yml      # lint + testes no push/PR
+├── docker-compose.yml            # Postgres local
+├── requirements.txt              # dependências diretas (o que o projeto pede)
+├── requirements.lock             # versões exatas resolvidas (o que o CI instala)
+├── .env.example
+└── docs/IMPLEMENTATION_GUIDE.md  # passo a passo e como estender
 ```
 
 ## Como rodar
 
-PrÃ©-requisitos: Python 3.11+, Docker Desktop, Git.
+Pré-requisitos: Python 3.11, Docker Desktop, Git.
 
 ```powershell
 # 1) subir o Postgres
@@ -70,7 +71,7 @@ docker compose up -d
 # 2) ambiente Python
 python -m venv .venv
 .venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+pip install -r requirements.lock
 
 # 3) rodar o pipeline
 python -m ingestion.fetch_data --ultimos 500
@@ -80,8 +81,26 @@ python -m transform.run_transform
 streamlit run dashboard/app.py
 ```
 
-Passo a passo detalhado, explicaÃ§Ã£o de cada camada e exemplos de extensÃ£o
+Passo a passo detalhado, explicação de cada camada e exemplos de extensão
 (dbt, Airflow, outras fontes de dados) em `docs/IMPLEMENTATION_GUIDE.md`.
+
+## Dependências: dois arquivos, dois papéis
+
+- `requirements.txt` — as 9 dependências **diretas**, com a versão que o
+  projeto pede. É o arquivo que você edita quando quer adicionar ou subir
+  uma biblioteca.
+- `requirements.lock` — as 51 versões **resolvidas**, incluindo todas as
+  transitivas. É gerado (`pip freeze`), nunca editado à mão, e é o que o CI
+  instala. Sem ele, quem clonasse o repositório meses depois receberia um
+  `numpy` ou um `pyarrow` diferente do testado — e veria comportamentos que
+  ninguém aqui jamais observou.
+
+Para regenerar o lock depois de mexer no `requirements.txt`:
+
+```powershell
+.venv\Scripts\python.exe -m pip install -r requirements.txt
+.venv\Scripts\python.exe -m pip freeze > requirements.lock
+```
 
 ## Testes
 
@@ -89,25 +108,26 @@ Passo a passo detalhado, explicaÃ§Ã£o de cada camada e exemplos de extensÃ�
 pytest tests/ -v
 ```
 
-Os testes de ingestÃ£o mockam a chamada HTTP (nÃ£o dependem de rede) e os
-testes de transformaÃ§Ã£o validam a estrutura dos scripts SQL â€” o suite
-inteiro roda sem precisar de Postgres, o que Ã© o que o workflow de CI faz
+Os testes de ingestão mockam a chamada HTTP (não dependem de rede) e os
+testes de transformação validam a estrutura dos scripts SQL — o suite
+inteiro roda sem precisar de Postgres, o que é o que o workflow de CI faz
 a cada push.
 
 ## O que este projeto demonstra
 
-| CompetÃªncia           | Onde                                              |
-|------------------------|----------------------------------------------------|
-| Consumo de API REST    | `ingestion/fetch_data.py`                          |
-| Modelagem de dados     | `sql/01_create_raw_table.sql`, schemas raw/analytics |
-| SQL avanÃ§ado           | `sql/02_create_analytics_table.sql` (window functions) |
-| ORM / conexÃ£o a banco  | `db/connection.py` (SQLAlchemy)                    |
-| Testes automatizados   | `tests/`                                           |
-| CI/CD                  | `.github/workflows/ci.yml`                         |
-| ContainerizaÃ§Ã£o        | `docker-compose.yml`                               |
-| VisualizaÃ§Ã£o de dados  | `dashboard/app.py`                                 |
-| DocumentaÃ§Ã£o           | este README + `docs/IMPLEMENTATION_GUIDE.md`       |
+| Competência            | Onde                                                 |
+|------------------------|------------------------------------------------------|
+| Consumo de API REST    | `ingestion/fetch_data.py`                            |
+| Modelagem de dados     | `sql/01_create_raw_table.sql`, schemas raw/analytics  |
+| SQL avançado           | `sql/02_create_analytics_table.sql` (window functions)|
+| ORM / conexão a banco  | `db/connection.py` (SQLAlchemy)                      |
+| Testes automatizados   | `tests/`                                             |
+| CI/CD                  | `.github/workflows/ci.yml`                           |
+| Build reprodutível     | `requirements.lock`                                  |
+| Containerização        | `docker-compose.yml`                                 |
+| Visualização de dados  | `dashboard/app.py`                                   |
+| Documentação           | este README + `docs/IMPLEMENTATION_GUIDE.md`         |
 
-## LicenÃ§a
+## Licença
 
-MIT â€” sinta-se livre para usar como base para o seu prÃ³prio projeto.
+MIT — sinta-se livre para usar como base para o seu próprio projeto.
