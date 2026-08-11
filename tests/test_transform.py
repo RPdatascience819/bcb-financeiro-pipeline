@@ -10,7 +10,13 @@ docs/IMPLEMENTATION_GUIDE.md, secao "Testes de integracao".
 
 from __future__ import annotations
 
+import os
+import sys
 from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from transform.run_transform import run_sql_file  # noqa: E402
 
 SQL_DIR = Path(__file__).resolve().parent.parent / "sql"
 
@@ -43,6 +49,30 @@ def test_scripts_sql_nao_estao_vazios_nem_tem_comandos_em_branco():
             if c and not all(line.strip().startswith("--") for line in c.splitlines() if line.strip())
         ]
         assert comandos_validos, f"{path.name} nao parece ter comandos SQL executaveis"
+
+
+@patch("transform.run_transform.get_engine")
+def test_run_sql_file_envia_o_arquivo_inteiro_sem_fatiar(mock_get_engine, tmp_path):
+    """Um ';' dentro de um comentario nao pode fatiar o script.
+
+    Fatiar em ';' quebra o arquivo no meio do comentario: sobra um pedaco so
+    de comentario (que o Postgres recusa como query vazia) e o resto da frase
+    vira lixo sintatico grudado no comando seguinte.
+    """
+    conteudo = (
+        "-- comentario com ; no meio, e a frase continua depois dele\n"
+        "CREATE TABLE t (id INTEGER);\n"
+    )
+    arquivo = tmp_path / "99_teste.sql"
+    arquivo.write_text(conteudo, encoding="utf-8")
+
+    conn = MagicMock()
+    mock_get_engine.return_value.begin.return_value.__enter__.return_value = conn
+
+    run_sql_file(arquivo)
+
+    enviados = [chamada.args[0] for chamada in conn.exec_driver_sql.call_args_list]
+    assert enviados == [conteudo], "O arquivo deve chegar ao driver inteiro, em uma unica chamada"
 
 
 def test_analytics_table_declara_todas_as_colunas_esperadas():
