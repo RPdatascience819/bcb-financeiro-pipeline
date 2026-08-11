@@ -25,3 +25,9 @@ pgdata/
 # SO
 .DS_Store
 Thumbs.db
+
+# Gerador de scaffold: uso unico, mantido apenas localmente.
+# Ele carrega uma copia integral de todos os arquivos do projeto em here-strings;
+# versiona-lo criaria uma segunda fonte da verdade, que diverge silenciosamente
+# do codigo real e sobrescreve o trabalho se for reexecutado.
+create_project.ps1
