@@ -21,6 +21,15 @@ from sqlalchemy import text
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from db.connection import get_engine  # noqa: E402
+from db.series_catalog import (  # noqa: E402
+    DIARIA,
+    SERIES,
+    Serie,
+    formata_valor,
+    nome_da_serie,
+    opcoes_do_seletor,
+    rotulo_janela,
+)
 
 st.set_page_config(page_title="Indicadores Econômicos — BCB", layout="wide")
 
@@ -43,27 +52,51 @@ def load_data(codigo_serie: int) -> pd.DataFrame:
     return df
 
 
-def render_kpis(df: pd.DataFrame) -> None:
+@st.cache_data(ttl=300)
+def series_disponiveis() -> list[int]:
+    """Codigos de serie que existem na tabela de metricas."""
+    engine = get_engine()
+    query = text("SELECT DISTINCT codigo_serie FROM analytics.serie_bcb_metrics")
+    with engine.connect() as conn:
+        codigos = [linha[0] for linha in conn.execute(query)]
+    return opcoes_do_seletor(codigos)
+
+
+def render_kpis(df: pd.DataFrame, serie: Serie) -> None:
     ultimo = df.iloc[-1]
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Último valor", f'{ultimo["valor"]:.4f}')
+    col1.metric("Último valor", formata_valor(ultimo["valor"], serie))
     col2.metric(
-        "Variação vs. dia anterior",
-        f'{ultimo["variacao_percentual"]:.2f}%' if pd.notna(ultimo["variacao_percentual"]) else "-",
+        "Variação vs. período anterior",
+        f'{ultimo["variacao_percentual"]:.2f}%'.replace(".", ",")
+        if pd.notna(ultimo["variacao_percentual"]) else "-",
     )
-    col3.metric("Média móvel 7d", f'{ultimo["media_movel_7d"]:.4f}')
-    col4.metric("Volatilidade 30d", f'{ultimo["volatilidade_30d"]:.4f}' if pd.notna(ultimo["volatilidade_30d"]) else "-")
+    col3.metric(
+        f"Média móvel {rotulo_janela(serie.periodicidade, 7)}",
+        formata_valor(ultimo["media_movel_7d"], serie),
+    )
+    col4.metric(
+        f"Volatilidade {rotulo_janela(serie.periodicidade, 30)}",
+        formata_valor(ultimo["volatilidade_30d"], serie)
+        if pd.notna(ultimo["volatilidade_30d"]) else "-",
+    )
 
 
-def render_chart(df: pd.DataFrame) -> None:
+def render_chart(df: pd.DataFrame, serie: Serie) -> None:
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=df["data"], y=df["valor"], name="Valor", mode="lines"))
-    fig.add_trace(go.Scatter(x=df["data"], y=df["media_movel_7d"], name="Média móvel 7d", mode="lines"))
-    fig.add_trace(go.Scatter(x=df["data"], y=df["media_movel_30d"], name="Média móvel 30d", mode="lines"))
+    fig.add_trace(go.Scatter(
+        x=df["data"], y=df["media_movel_7d"],
+        name=f"Média móvel {rotulo_janela(serie.periodicidade, 7)}", mode="lines",
+    ))
+    fig.add_trace(go.Scatter(
+        x=df["data"], y=df["media_movel_30d"],
+        name=f"Média móvel {rotulo_janela(serie.periodicidade, 30)}", mode="lines",
+    ))
     fig.update_layout(
-        title="Série histórica com médias móveis",
+        title=f"{serie.nome} — série histórica com médias móveis",
         xaxis_title="Data",
-        yaxis_title="Valor",
+        yaxis_title=serie.unidade,
         legend_title="",
         height=450,
     )
@@ -73,11 +106,25 @@ def render_chart(df: pd.DataFrame) -> None:
 def main() -> None:
     st.title("Indicadores Econômicos — Banco Central do Brasil")
     st.caption(
-        "Valores diários das séries do SGS/Banco Central, com médias móveis "
-        "de 7 e 30 dias, volatilidade e variação diária."
+        "Séries do SGS/Banco Central, com médias móveis de 7 e 30 períodos, "
+        "volatilidade e variação em relação ao período anterior."
     )
 
-    codigo_serie = st.sidebar.number_input("Código da série SGS", min_value=1, value=1, step=1)
+    codigos = series_disponiveis()
+    if not codigos:
+        st.warning(
+            "Nenhuma série carregada ainda. Rode `.\\run_pipeline.ps1` para "
+            "popular o banco e recarregue esta página."
+        )
+        return
+
+    codigo_serie = st.sidebar.selectbox(
+        "Série", codigos, format_func=nome_da_serie,
+    )
+    serie = SERIES.get(
+        codigo_serie,
+        Serie(nome_da_serie(codigo_serie), "", DIARIA, 4),
+    )
 
     try:
         df = load_data(int(codigo_serie))
@@ -90,7 +137,7 @@ def main() -> None:
         return
 
     if df.empty:
-        st.warning("Nenhum dado encontrado para essa série. Rode a ingestão primeiro.")
+        st.warning("Nenhum dado encontrado para essa série.")
         return
 
     min_data, max_data = df["data"].min().date(), df["data"].max().date()
@@ -107,8 +154,8 @@ def main() -> None:
         st.warning("Nenhum dado no período selecionado.")
         return
 
-    render_kpis(df_filtrado)
-    render_chart(df_filtrado)
+    render_kpis(df_filtrado, serie)
+    render_chart(df_filtrado, serie)
 
     with st.expander("Ver tabela detalhada"):
         st.dataframe(df_filtrado.sort_values("data", ascending=False), use_container_width=True)
