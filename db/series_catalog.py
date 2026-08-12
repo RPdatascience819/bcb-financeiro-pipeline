@@ -15,6 +15,7 @@ dependencias de um lado para o outro.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 DIARIA = "diaria"
@@ -60,6 +61,39 @@ def formata_valor(valor: float, serie: Serie) -> str:
     if serie.unidade.startswith("%"):
         return f"{numero} {serie.unidade}"
     return f"{serie.unidade} {numero}"
+
+
+def formata_variacao(
+    variacao_absoluta: float,
+    variacao_percentual: float,
+    serie: Serie,
+) -> str | None:
+    """Variacao pronta para o delta do st.metric. None se nao houver anterior.
+
+    Series medidas em % exibem a variacao ABSOLUTA, em pontos percentuais.
+    O IPCA indo de 0,16% para 0,07% ao mes rende -56,25% na coluna
+    percentual, e "o IPCA caiu 56%" nao tem sentido economico: caiu
+    0,09 ponto percentual. As demais series exibem a variacao relativa,
+    onde ela e a leitura natural (o dolar subiu 0,69%).
+
+    Devolve sem seta e sem cor -- quem desenha isso e o proprio st.metric,
+    que decide a direcao olhando se o primeiro caractere e um hifen.
+    """
+    if serie.unidade.startswith("%"):
+        valor, casas, sufixo = variacao_absoluta, serie.decimais, " p.p."
+    else:
+        valor, casas, sufixo = variacao_percentual, 2, "%"
+
+    if valor is None:
+        return None
+    valor = float(valor)
+    if math.isnan(valor):
+        return None
+
+    # O replace da virgula so pode tocar o numero: aplicado na string
+    # inteira, " p.p." viraria " p,p,".
+    numero = (f"{valor:+.{casas}f}" if valor else f"{valor:.{casas}f}").replace(".", ",")
+    return f"{numero}{sufixo}"
 
 
 def opcoes_do_seletor(codigos_no_banco: list[int]) -> list[int]:
