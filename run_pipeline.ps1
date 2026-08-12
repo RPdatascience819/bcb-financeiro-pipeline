@@ -14,8 +14,8 @@ $ErrorActionPreference = "Stop"
 $fim = (Get-Date).ToString("dd/MM/yyyy")
 $inicio = (Get-Date).AddYears(-$Anos).ToString("dd/MM/yyyy")
 
-Write-Host "==> Ingestao ($inicio ate $fim)" -ForegroundColor Cyan
-python -m ingestion.fetch_data --inicio $inicio --fim $fim
+Write-Host "==> Ingestao de todas as series ($inicio ate $fim)" -ForegroundColor Cyan
+python -m ingestion.fetch_data --todas --inicio $inicio --fim $fim
 
 Write-Host "==> Transformacao" -ForegroundColor Cyan
 python -m transform.run_transform

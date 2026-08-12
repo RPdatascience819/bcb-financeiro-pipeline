@@ -17,7 +17,14 @@ import pytest
 import requests
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from ingestion.fetch_data import IngestionError, build_url, fetch_series  # noqa: E402
+from db.series_catalog import SERIES  # noqa: E402
+from ingestion.fetch_data import (  # noqa: E402
+    IngestionError,
+    build_url,
+    fetch_series,
+    parse_args,
+    run_todas,
+)
 
 FAKE_PAYLOAD = [
     {"data": "01/01/2024", "valor": "4.8523"},
@@ -91,3 +98,37 @@ def test_fetch_series_colunas_inesperadas_gera_erro(mock_get):
 
     with pytest.raises(IngestionError):
         fetch_series(codigo=1, ultimos=3)
+
+
+@patch("ingestion.fetch_data.run")
+def test_run_todas_ingere_todas_as_series_do_catalogo(mock_run):
+    mock_run.return_value = 10
+
+    sucessos, falhas = run_todas(None, None, None, pausa=0)
+
+    codigos_chamados = [chamada.args[0] for chamada in mock_run.call_args_list]
+    assert codigos_chamados == list(SERIES)
+    assert (sucessos, falhas) == (len(SERIES), 0)
+
+
+@patch("ingestion.fetch_data.run")
+def test_run_todas_continua_apos_falha_de_uma_serie(mock_run):
+    """Uma serie bloqueada pelo throttle nao pode derrubar as outras duas."""
+
+    def efeito(codigo, *args, **kwargs):
+        if codigo == 11:
+            raise IngestionError("bloqueado pelo limite de requisicoes")
+        return 10
+
+    mock_run.side_effect = efeito
+
+    sucessos, falhas = run_todas(None, None, None, pausa=0)
+
+    codigos_chamados = [chamada.args[0] for chamada in mock_run.call_args_list]
+    assert codigos_chamados == list(SERIES), "deveria seguir para a serie seguinte"
+    assert (sucessos, falhas) == (len(SERIES) - 1, 1)
+
+
+def test_todas_e_serie_nao_podem_ser_usados_juntos():
+    with pytest.raises(SystemExit):
+        parse_args(["--todas", "--serie", "11"])

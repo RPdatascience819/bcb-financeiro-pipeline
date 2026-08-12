@@ -20,6 +20,7 @@ import argparse
 import logging
 import os
 import sys
+import time
 from datetime import datetime, timezone
 
 import pandas as pd
@@ -28,6 +29,7 @@ from sqlalchemy import text
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from db.connection import get_engine  # noqa: E402
+from db.series_catalog import SERIES, nome_da_serie  # noqa: E402
 
 logging.basicConfig(
     level=logging.INFO,
@@ -39,6 +41,7 @@ BASE_URL = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.{codigo}/dados"
 RAW_SCHEMA = "raw"
 RAW_TABLE = "serie_bcb"
 REQUEST_TIMEOUT = 30
+PAUSA_ENTRE_SERIES = 3.0
 
 
 class IngestionError(RuntimeError):
@@ -154,10 +157,45 @@ def run(codigo: int, inicio: str | None, fim: str | None, ultimos: int | None) -
     return load_raw(df)
 
 
+def run_todas(
+    inicio: str | None,
+    fim: str | None,
+    ultimos: int | None,
+    pausa: float = PAUSA_ENTRE_SERIES,
+) -> tuple[int, int]:
+    """Ingere todas as series do catalogo. Devolve (sucessos, falhas).
+
+    Uma serie que falha nao derruba as demais: o SGS limita requisicoes por
+    IP e tres chamadas em sequencia sao exatamente o padrao que dispara o
+    bloqueio. Carregar duas de tres e avisar e melhor que perder as tres.
+
+    A pausa entre series existe pelo mesmo motivo; os testes passam 0.
+    """
+    codigos = list(SERIES)
+    sucessos = 0
+    falhas = 0
+
+    for posicao, codigo in enumerate(codigos):
+        try:
+            total = run(codigo, inicio, fim, ultimos)
+            logger.info("Serie %d (%s): %d linhas.", codigo, nome_da_serie(codigo), total)
+            sucessos += 1
+        except IngestionError as exc:
+            logger.error("Serie %d (%s) falhou: %s", codigo, nome_da_serie(codigo), exc)
+            falhas += 1
+        if posicao < len(codigos) - 1:
+            time.sleep(pausa)
+
+    return sucessos, falhas
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Ingestao de series temporais do BCB (SGS).")
-    parser.add_argument("--serie", type=int, default=int(os.environ.get("BCB_SERIES_CODE", 1)),
-                         help="Codigo da serie SGS (default: 1 = dolar comercial, venda).")
+    grupo = parser.add_mutually_exclusive_group()
+    grupo.add_argument("--serie", type=int, default=int(os.environ.get("BCB_SERIES_CODE", 1)),
+                       help="Codigo da serie SGS (default: 1 = dolar comercial, venda).")
+    grupo.add_argument("--todas", action="store_true",
+                       help="Ingere todas as series do catalogo (db/series_catalog.py).")
     parser.add_argument("--inicio", type=str, default=os.environ.get("BCB_START_DATE") or None,
                          help="Data inicial no formato dd/MM/aaaa.")
     parser.add_argument("--fim", type=str, default=os.environ.get("BCB_END_DATE") or None,
@@ -169,5 +207,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 if __name__ == "__main__":
     args = parse_args()
+    if args.todas:
+        sucessos, falhas = run_todas(args.inicio, args.fim, args.ultimos)
+        logger.info("Ingestao concluida: %d de %d series carregadas.", sucessos, sucessos + falhas)
+        sys.exit(1 if falhas else 0)
     total = run(args.serie, args.inicio, args.fim, args.ultimos)
     logger.info("Ingestao concluida: %d linhas processadas.", total)
