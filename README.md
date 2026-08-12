@@ -28,12 +28,14 @@ analytics.serie_bcb_metrics  (Postgres, métricas prontas para consumo)
 ```
 
 - **Fonte de dados**: [API SGS do Banco Central do Brasil](https://dadosabertos.bcb.gov.br/) —
-  pública, sem autenticação, retorna séries temporais em JSON. Por padrão o
-  projeto usa a série 1 (dólar comercial, venda, diário), mas qualquer código
-  de série SGS funciona (ex.: 11 = Selic, 433 = IPCA).
+  pública, sem autenticação, retorna séries temporais em JSON. O projeto
+  carrega três séries (dólar comercial, Selic e IPCA), definidas em
+  `db/series_catalog.py`; qualquer outro código SGS funciona.
 - **Banco**: PostgreSQL 16, via Docker Compose.
 - **Transformação**: SQL puro com window functions (média móvel de 7 e 30
-  dias, volatilidade, variação diária). Fica fácil de migrar para dbt depois
+  períodos, volatilidade, variação). As janelas contam linhas, então numa
+  série diária são dias e numa mensal, meses — o dashboard rotula conforme a
+  periodicidade. Fica fácil de migrar para dbt depois
   (ver `docs/IMPLEMENTATION_GUIDE.md`).
 - **Apresentação**: Streamlit + Plotly, com KPIs, gráfico e tabela filtrável.
 - **Qualidade**: testes automatizados com pytest (mockando a API, sem
@@ -49,6 +51,7 @@ analytics.serie_bcb_metrics  (Postgres, métricas prontas para consumo)
 │   ├── 01_create_raw_table.sql
 │   └── 02_create_analytics_table.sql
 ├── db/connection.py              # engine SQLAlchemy compartilhada
+├── db/series_catalog.py          # séries conhecidas: nome, unidade, periodicidade
 ├── dashboard/app.py              # app Streamlit
 ├── run_pipeline.ps1              # atalho: ingestão + transformação
 ├── tests/                        # testes unitários (pytest)
@@ -86,8 +89,12 @@ streamlit run dashboard/app.py
 > no `.env` antes de subir — o Compose é parametrizado e nenhum YAML precisa
 > ser editado.
 
+O `run_pipeline.ps1` carrega todas as séries do catálogo
+(`db/series_catalog.py`): dólar comercial, Selic e IPCA. No dashboard, o
+seletor do sidebar troca entre elas pelo nome.
+
 O `run_pipeline.ps1` aceita `-Anos` para mudar a janela (padrão: 2). Para rodar
-cada camada separadamente, ou usar outra série SGS:
+cada camada separadamente, ou carregar uma série só:
 
 ```powershell
 python -m ingestion.fetch_data --serie 1 --inicio 01/01/2024 --fim 31/12/2025

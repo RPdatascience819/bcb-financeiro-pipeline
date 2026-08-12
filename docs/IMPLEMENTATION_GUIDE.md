@@ -66,12 +66,27 @@ Alternativas de execução:
 # atalho: ingestão + transformação, janela em anos (padrão 2)
 .\run_pipeline.ps1 -Anos 5
 
-# outra série SGS (ex.: 11 = Selic)
+# todas as series do catalogo (dolar, Selic, IPCA)
+python -m ingestion.fetch_data --todas --inicio 01/01/2024 --fim 31/12/2025
+
+# uma serie especifica
 python -m ingestion.fetch_data --serie 11 --inicio 01/01/2024 --fim 31/12/2025
 
 # espiada rápida: o modo --ultimos existe, mas o teto da API é 20
 python -m ingestion.fetch_data --ultimos 20
 ```
+
+`--todas` e `--serie` são mutuamente exclusivas: passar as duas é erro de uso.
+Uma série que falhe (o throttle do SGS, por exemplo) não derruba as demais —
+o log diz quantas de quantas foram carregadas e o processo sai com código
+diferente de zero se alguma falhou. Há uma pausa de 3s entre as séries,
+porque três chamadas em sequência são exatamente o padrão que dispara o
+limite por IP descrito abaixo.
+
+Para acrescentar uma série ao projeto, basta adicioná-la a `SERIES` em
+`db/series_catalog.py` — a ingestão e o seletor do dashboard passam a
+enxergá-la automaticamente. Informe a periodicidade correta: as janelas do
+SQL contam linhas, então é ela que define se "7" significa 7 dias ou 7 meses.
 
 > **Limites da API, medidos em 11/08/2026:**
 > - `/ultimos/{N}` aceita **no máximo N=20**. Acima disso: HTTP 400 com
