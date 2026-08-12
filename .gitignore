@@ -31,3 +31,6 @@ Thumbs.db
 # versiona-lo criaria uma segunda fonte da verdade, que diverge silenciosamente
 # do codigo real e sobrescreve o trabalho se for reexecutado.
 create_project.ps1
+
+# Mockups do companion visual do brainstorming (nao versionar)
+.superpowers/
