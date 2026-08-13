@@ -37,7 +37,9 @@ analytics.serie_bcb_metrics  (Postgres, métricas prontas para consumo)
   série diária são dias e numa mensal, meses — o dashboard rotula conforme a
   periodicidade. Fica fácil de migrar para dbt depois
   (ver `docs/IMPLEMENTATION_GUIDE.md`).
-- **Apresentação**: Streamlit + Plotly, com KPIs, gráfico e tabela filtrável.
+- **Apresentação**: Streamlit + Plotly, com faixa dos três indicadores,
+  gráfico detalhado da série escolhida e tabela filtrável. Tema próprio em
+  `dashboard/estilo.py`.
 - **Qualidade**: testes automatizados com pytest (mockando a API, sem
   dependência de rede) e um workflow de CI no GitHub Actions.
 
@@ -53,6 +55,8 @@ analytics.serie_bcb_metrics  (Postgres, métricas prontas para consumo)
 ├── db/connection.py              # engine SQLAlchemy compartilhada
 ├── db/series_catalog.py          # séries conhecidas: nome, unidade, periodicidade
 ├── dashboard/app.py              # app Streamlit
+├── dashboard/estilo.py           # tokens de cor, tema do Plotly e CSS
+├── .streamlit/config.toml        # tema nativo do Streamlit
 ├── run_pipeline.ps1              # atalho: ingestão + transformação
 ├── tests/                        # testes unitários (pytest)
 ├── .github/workflows/ci.yml      # lint + testes no push/PR

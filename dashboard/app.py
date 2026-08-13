@@ -32,6 +32,8 @@ from db.series_catalog import (  # noqa: E402
     rotulo_janela,
 )
 from dashboard.estilo import (  # noqa: E402
+    COR_MM7,
+    COR_MM30,
     TEMPLATE_PLOTLY,
     aplica_estilo,
     cor_da_serie,
@@ -139,42 +141,52 @@ def render_faixa_indicadores(codigos: list[int]) -> None:
 
 
 def render_kpis(df: pd.DataFrame, serie: Serie) -> None:
+    """Metricas da serie selecionada que a faixa do topo nao mostra.
+
+    Ultimo valor e variacao ficaram na faixa; repeti-los aqui seria ruido.
+    """
     ultimo = df.iloc[-1]
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Último valor", formata_valor(ultimo["valor"], serie))
-    col2.metric(
-        "Variação vs. período anterior",
-        f'{ultimo["variacao_percentual"]:.2f}%'.replace(".", ",")
-        if pd.notna(ultimo["variacao_percentual"]) else "-",
-    )
-    col3.metric(
+    col1, col2, col3 = st.columns(3)
+    col1.metric(
         f"Média móvel {rotulo_janela(serie.periodicidade, 7)}",
         formata_valor(ultimo["media_movel_7d"], serie),
     )
-    col4.metric(
+    col2.metric(
+        f"Média móvel {rotulo_janela(serie.periodicidade, 30)}",
+        formata_valor(ultimo["media_movel_30d"], serie),
+    )
+    col3.metric(
         f"Volatilidade {rotulo_janela(serie.periodicidade, 30)}",
         formata_valor(ultimo["volatilidade_30d"], serie)
         if pd.notna(ultimo["volatilidade_30d"]) else "-",
     )
 
 
-def render_chart(df: pd.DataFrame, serie: Serie) -> None:
+def render_chart(df: pd.DataFrame, serie: Serie, codigo: int) -> None:
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=df["data"], y=df["valor"], name="Valor", mode="lines"))
+    fig.add_trace(go.Scatter(
+        x=df["data"], y=df["valor"], name="Valor", mode="lines",
+        line={"color": cor_da_serie(codigo), "width": 2},
+    ))
     fig.add_trace(go.Scatter(
         x=df["data"], y=df["media_movel_7d"],
         name=f"Média móvel {rotulo_janela(serie.periodicidade, 7)}", mode="lines",
+        line={"color": COR_MM7, "width": 1.4, "dash": "dot"},
     ))
     fig.add_trace(go.Scatter(
         x=df["data"], y=df["media_movel_30d"],
         name=f"Média móvel {rotulo_janela(serie.periodicidade, 30)}", mode="lines",
+        line={"color": COR_MM30, "width": 1.4, "dash": "dot"},
     ))
     fig.update_layout(
+        template=TEMPLATE_PLOTLY,
         title=f"{serie.nome} — série histórica com médias móveis",
-        xaxis_title="Data",
+        xaxis_title=None,
         yaxis_title=serie.unidade,
+        legend={"orientation": "h", "yanchor": "bottom", "y": 1.0, "xanchor": "left", "x": 0},
         legend_title="",
-        height=450,
+        height=420,
+        hovermode="x unified",
     )
     st.plotly_chart(fig, use_container_width=True)
 
@@ -232,10 +244,34 @@ def main() -> None:
         return
 
     render_kpis(df_filtrado, serie)
-    render_chart(df_filtrado, serie)
+    render_chart(df_filtrado, serie, codigo_serie)
 
     with st.expander("Ver tabela detalhada"):
-        st.dataframe(df_filtrado.sort_values("data", ascending=False), use_container_width=True)
+        st.dataframe(
+            df_filtrado.sort_values("data", ascending=False),
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "data": st.column_config.DateColumn("Data", format="DD/MM/YYYY"),
+                "valor": st.column_config.NumberColumn("Valor", format="%.4f"),
+                "media_movel_7d": st.column_config.NumberColumn(
+                    f"MM {rotulo_janela(serie.periodicidade, 7)}", format="%.4f"),
+                "media_movel_30d": st.column_config.NumberColumn(
+                    f"MM {rotulo_janela(serie.periodicidade, 30)}", format="%.4f"),
+                "volatilidade_30d": st.column_config.NumberColumn(
+                    f"Volatilidade {rotulo_janela(serie.periodicidade, 30)}", format="%.4f"),
+                "variacao_absoluta": st.column_config.NumberColumn(
+                    "Variação absoluta", format="%.4f"),
+                "variacao_percentual": st.column_config.NumberColumn(
+                    "Variação %", format="%.2f%%"),
+            },
+        )
+
+    st.sidebar.divider()
+    st.sidebar.caption(
+        "**Fonte:** Sistema Gerenciador de Séries Temporais (SGS), "
+        "Banco Central do Brasil."
+    )
 
 
 if __name__ == "__main__":

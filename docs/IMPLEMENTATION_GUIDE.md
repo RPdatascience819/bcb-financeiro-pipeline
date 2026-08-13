@@ -120,9 +120,28 @@ Executa, em ordem, cada arquivo em `sql/`. Hoje são dois:
 streamlit run dashboard/app.py
 ```
 
-Abre em `http://localhost:8501`. O sidebar permite trocar o código da série
-e filtrar o período; os KPIs e o gráfico recalculam a partir do DataFrame
-já filtrado.
+Abre em `http://localhost:8501`. O sidebar permite trocar a série e filtrar
+o período; os KPIs e o gráfico recalculam a partir do DataFrame já filtrado.
+A faixa de indicadores do topo é a exceção: ela mostra sempre o valor mais
+recente de cada série, com a data de referência ao lado, porque um cartão
+rotulado como valor atual exibindo um número de dois anos atrás seria falso.
+
+### Aparência
+
+O tema mora em dois arquivos, e só neles: `.streamlit/config.toml` (cores
+base, lidas nativamente pelo Streamlit) e `dashboard/estilo.py` (tokens,
+template do Plotly e o CSS pontual). Os valores de cor estão repetidos nos
+dois porque o tema nativo só lê TOML — ao mudar um, mude o outro.
+
+O CSS cobre apenas o que o Streamlit 1.36 não permite nativamente: o
+`st.metric` só passou a aceitar `border` na 1.44, e a tipografia dos KPIs
+não é configurável. Cada regra leva um comentário dizendo o que faz, porque
+os seletores miram `data-testid` internos do Streamlit e podem desalinhar
+num upgrade. Se isso acontecer, apagar a regra é seguro: nada quebra
+funcionalmente sem ela.
+
+Para trocar a paleta, edite os tokens em `estilo.py` e espelhe as quatro
+cores base no `config.toml`.
 
 ## 2. Por que essas decisões técnicas
 
