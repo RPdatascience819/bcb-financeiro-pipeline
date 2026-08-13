@@ -97,3 +97,24 @@ def test_formata_variacao_negativa_usa_hifen_ascii():
     resultado = formata_variacao(-0.0354, -0.6903, SERIES[1])
     assert resultado == "-0,69%"
     assert resultado.startswith("-")
+
+
+def test_formata_variacao_serie_percentual_rounding_pequeno_positivo():
+    # IPCA com decimais=2. O SQL armazena variacao_absoluta com 4 casas
+    # (0.004), que arredonda para 0.00. A verificacao do sinal precisa
+    # usar o valor arredondado, nao o raw, senao "+0,00 p.p." mentiria.
+    assert formata_variacao(0.004, 5.7, SERIES[433]) == "0,00 p.p."
+
+
+def test_formata_variacao_serie_percentual_rounding_pequeno_negativo():
+    # Mesmo caso mas negativo: -0.004 arredonda para -0.00. O valor raw
+    # e negativo, mas o arredondado e zero, e o resultado nao deve
+    # carregar o sinal do zero.
+    assert formata_variacao(-0.004, -5.7, SERIES[433]) == "0,00 p.p."
+
+
+def test_formata_variacao_zero_negativo():
+    # -0.0 e um edge case onde bool(-0.0) e False mas a formatacao
+    # ainda imprime o minus. A verificacao com valor arredondado e abs()
+    # evita isso.
+    assert formata_variacao(-0.0, -0.0, SERIES[11]) == "0,0000 p.p."

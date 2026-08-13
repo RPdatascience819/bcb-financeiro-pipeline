@@ -92,7 +92,8 @@ def formata_variacao(
 
     # O replace da virgula so pode tocar o numero: aplicado na string
     # inteira, " p.p." viraria " p,p,".
-    numero = (f"{valor:+.{casas}f}" if valor else f"{valor:.{casas}f}").replace(".", ",")
+    valor_arredondado = round(valor, casas)
+    numero = (f"{valor_arredondado:+.{casas}f}" if valor_arredondado else f"{abs(valor_arredondado):.{casas}f}").replace(".", ",")
     return f"{numero}{sufixo}"
 
 
