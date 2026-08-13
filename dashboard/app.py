@@ -26,11 +26,16 @@ from db.series_catalog import (  # noqa: E402
     SERIES,
     Serie,
     formata_valor,
+    formata_variacao,
     nome_da_serie,
     opcoes_do_seletor,
     rotulo_janela,
 )
-from dashboard.estilo import aplica_estilo  # noqa: E402
+from dashboard.estilo import (  # noqa: E402
+    TEMPLATE_PLOTLY,
+    aplica_estilo,
+    cor_da_serie,
+)
 
 st.set_page_config(page_title="Indicadores Econômicos — BCB", layout="wide")
 
@@ -61,6 +66,76 @@ def series_disponiveis() -> list[int]:
     with engine.connect() as conn:
         codigos = [linha[0] for linha in conn.execute(query)]
     return opcoes_do_seletor(codigos)
+
+
+JANELA_SPARKLINE = 90
+
+
+def serie_do_codigo(codigo: int) -> Serie:
+    """Serie do catalogo, com fallback para codigo presente no banco mas
+    ausente do catalogo -- some-lo esconderia dados que existem."""
+    return SERIES.get(codigo, Serie(nome_da_serie(codigo), "", DIARIA, 4))
+
+
+def render_sparkline(df: pd.DataFrame, codigo: int) -> None:
+    """Minigrafico de tendencia recente: sem eixos, sem legenda, sem hover.
+
+    Mostra os ultimos JANELA_SPARKLINE registros, nao a serie inteira: dois
+    anos de serie diaria num espaco de 48px viram um borrao. Numa serie
+    mensal os 24 registros existentes cabem todos.
+    """
+    recorte = df.tail(JANELA_SPARKLINE)
+    fig = go.Figure(
+        go.Scatter(
+            x=recorte["data"],
+            y=recorte["valor"],
+            mode="lines",
+            line={"color": cor_da_serie(codigo), "width": 2},
+            hoverinfo="skip",
+        )
+    )
+    fig.update_layout(
+        template=TEMPLATE_PLOTLY,
+        height=48,
+        margin={"l": 0, "r": 0, "t": 0, "b": 0},
+        xaxis={"visible": False},
+        yaxis={"visible": False},
+        showlegend=False,
+    )
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+
+def render_faixa_indicadores(codigos: list[int]) -> None:
+    """Faixa superior: cada indicador carregado, no seu valor mais recente.
+
+    Nao obedece ao filtro de periodo de proposito. Um cartao rotulado como
+    valor atual exibindo um numero de dois anos atras seria uma afirmacao
+    falsa -- por isso a data de referencia aparece em cada cartao.
+
+    Nao abre consulta nova: load_data ja e cacheada por 5 minutos.
+    """
+    for coluna, codigo in zip(st.columns(len(codigos)), codigos):
+        df = load_data(codigo)
+        if df.empty:
+            continue
+        serie = serie_do_codigo(codigo)
+        ultimo = df.iloc[-1]
+        variacao = formata_variacao(
+            ultimo["variacao_absoluta"], ultimo["variacao_percentual"], serie
+        )
+        with coluna.container(border=True):
+            st.metric(
+                nome_da_serie(codigo),
+                formata_valor(ultimo["valor"], serie),
+                delta=variacao,
+                # Sem valor anterior o delta some. Variacao exatamente zero
+                # e a unica que comeca com "0" (as positivas levam "+"), e
+                # precisa ficar neutra: o padrao do Streamlit pintaria de
+                # verde um indicador que nao subiu.
+                delta_color="off" if variacao and variacao.startswith("0") else "normal",
+            )
+            st.caption(f"em {ultimo['data'].strftime('%d/%m/%Y')}")
+            render_sparkline(df, codigo)
 
 
 def render_kpis(df: pd.DataFrame, serie: Serie) -> None:
@@ -120,13 +195,13 @@ def main() -> None:
         )
         return
 
+    render_faixa_indicadores(codigos)
+    st.divider()
+
     codigo_serie = st.sidebar.selectbox(
         "Série", codigos, format_func=nome_da_serie,
     )
-    serie = SERIES.get(
-        codigo_serie,
-        Serie(nome_da_serie(codigo_serie), "", DIARIA, 4),
-    )
+    serie = serie_do_codigo(codigo_serie)
 
     try:
         df = load_data(int(codigo_serie))
