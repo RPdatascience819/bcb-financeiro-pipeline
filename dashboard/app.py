@@ -30,6 +30,7 @@ from db.series_catalog import (  # noqa: E402
     opcoes_do_seletor,
     rotulo_janela,
 )
+from dashboard.estilo import aplica_estilo  # noqa: E402
 
 st.set_page_config(page_title="Indicadores Econômicos — BCB", layout="wide")
 
@@ -104,6 +105,7 @@ def render_chart(df: pd.DataFrame, serie: Serie) -> None:
 
 
 def main() -> None:
+    aplica_estilo()
     st.title("Indicadores Econômicos — Banco Central do Brasil")
     st.caption(
         "Séries do SGS/Banco Central, com médias móveis de 7 e 30 períodos, "

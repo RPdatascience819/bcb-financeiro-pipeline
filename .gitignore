@@ -16,7 +16,12 @@ venv/
 pgdata/
 
 # Streamlit
-.streamlit/
+# Ignora o diretorio inteiro (secrets.toml mora aqui) menos o tema, que
+# precisa vir junto no clone. O padrao e ".streamlit/*" e nao ".streamlit/":
+# o git nao reinclui arquivo cujo diretorio pai foi excluido, entao com a
+# barra sozinha o "!" abaixo nao teria efeito.
+.streamlit/*
+!.streamlit/config.toml
 
 # IDE
 .vscode/*

@@ -1,0 +1,9 @@
+# Tema do dashboard. Os valores repetem os tokens de dashboard/estilo.py
+# porque o tema nativo do Streamlit so le TOML -- ao mudar um, mude o outro.
+[theme]
+base = "dark"
+primaryColor = "#22D3EE"
+backgroundColor = "#0B1B2B"
+secondaryBackgroundColor = "#12293F"
+textColor = "#E8F1F8"
+font = "sans serif"
