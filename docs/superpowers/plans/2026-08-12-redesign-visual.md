@@ -34,7 +34,7 @@
 - Consumes: `Serie` e `SERIES`, já existentes no módulo.
 - Produces: `formata_variacao(variacao_absoluta: float, variacao_percentual: float, serie: Serie) -> str | None`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Adicionar ao final de `tests/test_series_catalog.py`:
 
@@ -85,12 +85,12 @@ from db.series_catalog import (  # noqa: E402
 
 (substitui o bloco de import existente, acrescentando `formata_variacao`)
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `.venv\Scripts\python.exe -m pytest tests/test_series_catalog.py -v`
 Expected: FAIL na coleta — `ImportError: cannot import name 'formata_variacao' from 'db.series_catalog'`
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Em `db/series_catalog.py`, acrescentar `import math` logo abaixo de `from __future__ import annotations`:
 
@@ -137,17 +137,17 @@ def formata_variacao(
     return f"{numero}{sufixo}"
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `.venv\Scripts\python.exe -m pytest tests/test_series_catalog.py -v`
 Expected: PASS — 16 testes (11 antigos + 5 novos)
 
-- [ ] **Step 5: Run the whole suite and the linter**
+- [x] **Step 5: Run the whole suite and the linter**
 
 Run: `.venv\Scripts\python.exe -m pytest -q` → 29 testes passando
 Run: `.venv\Scripts\python.exe -m ruff check .` → `All checks passed!`
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add db/series_catalog.py tests/test_series_catalog.py
@@ -181,7 +181,7 @@ Não muda comportamento nenhum: só aparência. A verificação é visual, no St
   - `TEMPLATE_PLOTLY: go.layout.Template`
   - `aplica_estilo() -> None`
 
-- [ ] **Step 1: Criar o tema nativo**
+- [x] **Step 1: Criar o tema nativo**
 
 Create `.streamlit/config.toml`:
 
@@ -197,12 +197,12 @@ textColor = "#E8F1F8"
 font = "sans serif"
 ```
 
-- [ ] **Step 2: Confirmar que o arquivo será versionado**
+- [x] **Step 2: Confirmar que o arquivo será versionado**
 
 Run: `git check-ignore -v .streamlit/config.toml`
 Expected: **sem saída** e código de saída 1 (nada o ignora). Se algo o ignorar, acrescentar `!.streamlit/config.toml` ao `.gitignore` — sem o tema versionado, quem clonar o projeto vê o Streamlit padrão.
 
-- [ ] **Step 3: Criar o módulo de aparência**
+- [x] **Step 3: Criar o módulo de aparência**
 
 Create `dashboard/estilo.py`:
 
@@ -306,7 +306,7 @@ def aplica_estilo() -> None:
     st.markdown(CSS, unsafe_allow_html=True)
 ```
 
-- [ ] **Step 4: Ligar o estilo no app**
+- [x] **Step 4: Ligar o estilo no app**
 
 Em `dashboard/app.py`, acrescentar o import logo abaixo do bloco que importa de `db.series_catalog`:
 
@@ -335,12 +335,12 @@ Conferir em `http://localhost:8501`:
 
 **Se o CSS dos KPIs não surtir efeito**, abrir o DevTools do navegador, inspecionar um `st.metric` e conferir o `data-testid` real desta versão do Streamlit; ajustar o seletor no `estilo.py`. Os testids usados aqui (`stMetricLabel`, `stMetricValue`, `stVerticalBlockBorderWrapper`) são internos e podem divergir.
 
-- [ ] **Step 6: Run the whole suite and the linter**
+- [x] **Step 6: Run the whole suite and the linter**
 
 Run: `.venv\Scripts\python.exe -m pytest -q` → 29 testes passando
 Run: `.venv\Scripts\python.exe -m ruff check .` → `All checks passed!`
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add .streamlit/config.toml dashboard/estilo.py dashboard/app.py
@@ -373,7 +373,7 @@ O coração do redesign: os três indicadores sempre visíveis. Sem teste unitá
   - `render_sparkline(df: pd.DataFrame, codigo: int) -> None`
   - `render_faixa_indicadores(codigos: list[int]) -> None`
 
-- [ ] **Step 1: Completar os imports**
+- [x] **Step 1: Completar os imports**
 
 Em `dashboard/app.py`, o bloco que importa de `db.series_catalog` passa a incluir `formata_variacao`:
 
@@ -402,7 +402,7 @@ from dashboard.estilo import (  # noqa: E402
 
 (`COR_MM7` e `COR_MM30` ficam para a Task 4, que é onde passam a ser usados — importá-los aqui faria o `ruff` acusar `F401`.)
 
-- [ ] **Step 2: Extrair o fallback de série para uma função**
+- [x] **Step 2: Extrair o fallback de série para uma função**
 
 Hoje esse fallback está embutido no `main()`. A Task 3 passa a precisar dele em dois lugares, então vira função. Adicionar logo após `series_disponiveis`:
 
@@ -416,7 +416,7 @@ def serie_do_codigo(codigo: int) -> Serie:
     return SERIES.get(codigo, Serie(nome_da_serie(codigo), "", DIARIA, 4))
 ```
 
-- [ ] **Step 3: Escrever o minigráfico**
+- [x] **Step 3: Escrever o minigráfico**
 
 Adicionar após `serie_do_codigo`:
 
@@ -449,7 +449,7 @@ def render_sparkline(df: pd.DataFrame, codigo: int) -> None:
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 ```
 
-- [ ] **Step 4: Escrever a faixa de indicadores**
+- [x] **Step 4: Escrever a faixa de indicadores**
 
 Adicionar após `render_sparkline`:
 
@@ -487,7 +487,7 @@ def render_faixa_indicadores(codigos: list[int]) -> None:
             render_sparkline(df, codigo)
 ```
 
-- [ ] **Step 5: Chamar a faixa no `main()` e simplificar o seletor**
+- [x] **Step 5: Chamar a faixa no `main()` e simplificar o seletor**
 
 Em `main()`, substituir o bloco que vai do `codigo_serie = st.sidebar.selectbox(` até o fecha-parênteses do `serie = SERIES.get(...)` por:
 
@@ -513,12 +513,12 @@ Conferir em `http://localhost:8501`:
 5. cada cartão traz a data de referência e um minigráfico;
 6. trocar a série no seletor **não** altera a faixa, só o gráfico de baixo.
 
-- [ ] **Step 7: Run the whole suite and the linter**
+- [x] **Step 7: Run the whole suite and the linter**
 
 Run: `.venv\Scripts\python.exe -m pytest -q` → 29 testes passando
 Run: `.venv\Scripts\python.exe -m ruff check .` → `All checks passed!`
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add dashboard/app.py
@@ -550,7 +550,7 @@ Fecha o redesign: o gráfico detalhado e a tabela passam a seguir a paleta, a si
 - Consumes: `TEMPLATE_PLOTLY`, `cor_da_serie`, `COR_MM7`, `COR_MM30` (Task 2); `serie_do_codigo` (Task 3).
 - Produces: nada consumido por outras tasks.
 
-- [ ] **Step 1: Encolher o `render_kpis` para o que a faixa não mostra**
+- [x] **Step 1: Encolher o `render_kpis` para o que a faixa não mostra**
 
 > **Divergência consciente da spec.** A spec diz que "`render_chart` e `render_kpis` passam a usar `TEMPLATE_PLOTLY` e as cores por série", mas `render_kpis` não desenha gráfico nenhum — foi imprecisão do texto. O problema real só apareceu ao escrever o código: com a faixa da Task 3 exibindo último valor e variação, manter os quatro KPIs antigos **duplicaria os dois primeiros** na mesma tela. Removê-los todos perderia médias móveis e volatilidade, que não estão em lugar nenhum. A saída é encolher para as três métricas que a faixa não cobre.
 
@@ -579,7 +579,7 @@ def render_kpis(df: pd.DataFrame, serie: Serie) -> None:
     )
 ```
 
-- [ ] **Step 2: Aplicar a paleta ao gráfico detalhado**
+- [x] **Step 2: Aplicar a paleta ao gráfico detalhado**
 
 Substituir `render_chart` inteira por:
 
@@ -615,7 +615,7 @@ def render_chart(df: pd.DataFrame, serie: Serie, codigo: int) -> None:
 
 A legenda vai para cima na horizontal porque a vertical à direita rouba largura do gráfico; `hovermode="x unified"` mostra as três séries na mesma data num tooltip só.
 
-- [ ] **Step 3: Formatar a tabela e acrescentar o rodapé da sidebar**
+- [x] **Step 3: Formatar a tabela e acrescentar o rodapé da sidebar**
 
 Em `main()`, substituir a chamada `render_chart(df_filtrado, serie)` por `render_chart(df_filtrado, serie, codigo_serie)`.
 
@@ -662,12 +662,12 @@ Conferir em `http://localhost:8501`:
 5. o rodapé da sidebar cita a fonte dos dados;
 6. escolher IPCA muda os rótulos para "meses" também na tabela.
 
-- [ ] **Step 5: Run the whole suite and the linter**
+- [x] **Step 5: Run the whole suite and the linter**
 
 Run: `.venv\Scripts\python.exe -m pytest -q` → 29 testes passando
 Run: `.venv\Scripts\python.exe -m ruff check .` → `All checks passed!`
 
-- [ ] **Step 6: Atualizar o README**
+- [x] **Step 6: Atualizar o README**
 
 Na seção "Estrutura do projeto", acrescentar após a linha de `dashboard/app.py`:
 
@@ -684,7 +684,7 @@ E na lista de camadas, substituir a linha de "Apresentação" por:
   `dashboard/estilo.py`.
 ```
 
-- [ ] **Step 7: Atualizar o guia**
+- [x] **Step 7: Atualizar o guia**
 
 Em `docs/IMPLEMENTATION_GUIDE.md`, acrescentar ao final da seção `### 1.5 Dashboard` — ou seja, imediatamente **antes** da linha `## 2. Por que essas decisões técnicas`:
 
@@ -707,7 +707,7 @@ Para trocar a paleta, edite os tokens em `estilo.py` e espelhe as quatro
 cores base no `config.toml`.
 ```
 
-- [ ] **Step 8: Commit e push**
+- [x] **Step 8: Commit e push**
 
 ```bash
 git add dashboard/app.py README.md docs/IMPLEMENTATION_GUIDE.md
@@ -730,10 +730,10 @@ git push origin main
 
 ## Verificação final
 
-- [ ] `.venv\Scripts\python.exe -m pytest -q` → 29 testes passando
-- [ ] `.venv\Scripts\python.exe -m ruff check .` → `All checks passed!`
+- [x] `.venv\Scripts\python.exe -m pytest -q` → 29 testes passando
+- [x] `.venv\Scripts\python.exe -m ruff check .` → `All checks passed!`
 - [ ] Fundo azul-marinho, três cartões no topo com minigráfico e data
-- [ ] IPCA exibe `-0,09 p.p.` e **não** `-56,25%`
-- [ ] Selic estável aparece em cinza, não em verde
-- [ ] Trocar de série no seletor não altera a faixa do topo
+- [x] IPCA exibe `-0,09 p.p.` e **não** `-56,25%`
+- [x] Selic estável aparece em cinza, não em verde
+- [x] Trocar de série no seletor não altera a faixa do topo
 - [ ] CI verde após o push
