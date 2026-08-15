@@ -59,10 +59,16 @@ TEMPLATE_PLOTLY = go.layout.Template(
 # e apagar a regra -- nada quebra funcionalmente sem ela.
 CSS = f"""
 <style>
-/* st.container(border=True) desenha so a borda; a superficie mais clara
-   que separa o cartao do fundo vem daqui. */
+/* Da o tom Navy a borda dos cartoes e do expander.
+   O testid e carimbado em TODO vertical block do Streamlit 1.36 (colunas,
+   corpo da pagina, interior do expander) -- o border=True entra so como prop
+   do emotion, sem atributo que distinga. Por isso aqui so entram propriedades
+   inofensivas em quem nao tem borda: border-color e border-radius nao
+   desenham nada sozinhos. Um `background` aqui pintaria as colunas e o corpo
+   da pagina, e retangulos tintos sobrepostos e o que produz canto quadrado.
+   O padding dos cartoes ja vem do proprio border=True. */
 div[data-testid="stVerticalBlockBorderWrapper"] {{
-    background: {SUPERFICIE};
+    border-color: {BORDA};
     border-radius: 10px;
 }}
 
