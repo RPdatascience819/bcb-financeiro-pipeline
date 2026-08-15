@@ -6,11 +6,14 @@
 
 ### Pipeline de Dados: API pública → PostgreSQL → Dashboard
 
-Pipeline de engenharia de dados ponta a ponta, construído como peça de portfólio
-para freelancing. Em vez de mais um notebook de exploração, o objetivo aqui é
-demonstrar entrega: ingestão, transformação, teste, execução reprodutível e
-documentação — o conjunto de competências que um cliente pequeno/médio
-realmente avalia ao contratar.
+Pipeline que coleta séries temporais econômicas da API pública do Banco Central
+do Brasil (SGS), grava os dados brutos no PostgreSQL, calcula métricas
+derivadas em SQL e as apresenta num dashboard Streamlit.
+
+São três séries por padrão — dólar comercial, Selic e IPCA — e as métricas
+calculadas são média móvel de 7 e 30 períodos, volatilidade e variação
+percentual. Todo o fluxo roda com um comando (`run_pipeline.ps1`) e não
+depende de credenciais: a API do BCB é aberta.
 
 ## Arquitetura
 
@@ -143,21 +146,6 @@ testes de transformação validam a estrutura dos scripts SQL — o suite
 inteiro roda sem precisar de Postgres, o que é o que o workflow de CI faz
 a cada push.
 
-## O que este projeto demonstra
-
-| Competência            | Onde                                                 |
-|------------------------|------------------------------------------------------|
-| Consumo de API REST    | `ingestion/fetch_data.py`                            |
-| Modelagem de dados     | `sql/01_create_raw_table.sql`, schemas raw/analytics  |
-| SQL avançado           | `sql/02_create_analytics_table.sql` (window functions)|
-| ORM / conexão a banco  | `db/connection.py` (SQLAlchemy)                      |
-| Testes automatizados   | `tests/`                                             |
-| CI/CD                  | `.github/workflows/ci.yml`                           |
-| Build reprodutível     | `requirements.lock`                                  |
-| Containerização        | `docker-compose.yml`                                 |
-| Visualização de dados  | `dashboard/app.py`                                   |
-| Documentação           | este README + `docs/IMPLEMENTATION_GUIDE.md`         |
-
 ## Licença
 
-MIT — sinta-se livre para usar como base para o seu próprio projeto.
+MIT — veja [LICENSE](LICENSE).
