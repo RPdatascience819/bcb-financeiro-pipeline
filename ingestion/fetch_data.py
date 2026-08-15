@@ -10,8 +10,12 @@ Endpoint publico, sem autenticacao:
   https://api.bcb.gov.br/dados/serie/bcdata.sgs.{codigo}/dados/ultimos/{n}?formato=json
 
 Uso:
-    python -m ingestion.fetch_data --serie 1 --ultimos 500
     python -m ingestion.fetch_data --serie 1 --inicio 01/01/2023 --fim 31/12/2023
+    python -m ingestion.fetch_data --todas --inicio 01/01/2023 --fim 31/12/2023
+
+O --ultimos existe, mas o endpoint /ultimos/{N} aceita no maximo 20 valores --
+o que nem preenche a janela de 30 periodos das metricas. Prefira o intervalo
+de datas, que aceita ate 10 anos em series diarias.
 """
 
 from __future__ import annotations
@@ -201,7 +205,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--fim", type=str, default=os.environ.get("BCB_END_DATE") or None,
                          help="Data final no formato dd/MM/aaaa.")
     parser.add_argument("--ultimos", type=int, default=None,
-                         help="Se informado, ignora --inicio/--fim e busca os N valores mais recentes.")
+                         help="Se informado, ignora --inicio/--fim e busca os N valores mais "
+                              "recentes. A API do BCB recusa N maior que 20.")
     return parser.parse_args(argv)
 
 
